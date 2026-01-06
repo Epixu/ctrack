@@ -2,9 +2,6 @@
 // License:MIT License See LICENSE for the full license.
 // https://github.com/Compaile/ctrack
 #pragma once
-#ifndef CTRACK_H
-#define CTRACK_H
-
 #include <string>
 #include <iostream>
 #include <iterator>
@@ -19,7 +16,7 @@
 #include <set>
 #include <numeric>
 #ifndef CTRACK_DISABLE_EXECUTION_POLICY
-#include <execution>
+	#include <execution>
 #endif
 #include <vector>
 #include <iomanip>
@@ -27,6 +24,10 @@
 #include <sstream>
 #include <atomic>
 #include <cmath>
+#ifdef CTRACK_ENABLE_PERSISTENCE
+	#include <fstream>
+	#include <charconv>
+#endif
 
 #define CTRACK_VERSION_MAJOR 1
 #define CTRACK_VERSION_MINOR 1
@@ -46,15 +47,14 @@
 
 namespace ctrack
 {
-
 	inline namespace CTRACK_VERSION_NAMESPACE
 	{
-#ifndef CTRACK_DISABLE_EXECUTION_POLICY
-		constexpr auto execution_policy = std::execution::par_unseq;
-#define OPT_EXEC_POLICY execution_policy,
-#else
-#define OPT_EXEC_POLICY
-#endif
+		#ifndef CTRACK_DISABLE_EXECUTION_POLICY
+			constexpr auto execution_policy = std::execution::par_unseq;
+			#define OPT_EXEC_POLICY execution_policy,
+		#else
+			#define OPT_EXEC_POLICY
+		#endif
 
 		template <typename T, typename Field>
 		auto sum_field(const std::vector<T> &vec, Field T::*field)
@@ -193,8 +193,7 @@ namespace ctrack
 			"\033[38;5;71m"		// Light Green (Row)
 		};
 
-		class BeautifulTable
-		{
+		class BeautifulTable {
 		private:
 			std::vector<std::pair<std::string, int>> top_header;
 			std::vector<std::string> header;
@@ -204,8 +203,7 @@ namespace ctrack
 			ColorScheme colors;
 			static inline const std::string RESET_COLOR = "\033[0m";
 
-			void updateColumnWidths(const std::vector<std::string> &row)
-			{
+			void updateColumnWidths(const std::vector<std::string> &row) {
 				for (size_t i = 0; i < row.size(); ++i)
 				{
 					if (i >= columnWidths.size())
@@ -220,8 +218,7 @@ namespace ctrack
 			}
 
 			template <typename StreamType>
-			void printHorizontalLine(StreamType &stream) const
-			{
+			void printHorizontalLine(StreamType &stream) const {
 				if (useColor)
 					stream << colors.border_color;
 				stream << "+";
@@ -235,8 +232,7 @@ namespace ctrack
 			}
 
 			template <typename StreamType>
-			void printRow(StreamType &stream, const std::vector<std::string> &row, const std::string &color, bool center = false) const
-			{
+			void printRow(StreamType &stream, const std::vector<std::string> &row, const std::string &color, bool center = false) const {
 				if (useColor)
 					stream << colors.border_color;
 				stream << "|";
@@ -267,8 +263,7 @@ namespace ctrack
 			}
 
 			template <typename StreamType>
-			void printRow(StreamType &stream, const std::vector<std::pair<std::string, int>> &row, const std::string &color) const
-			{
+			void printRow(StreamType &stream, const std::vector<std::pair<std::string, int>> &row, const std::string &color) const {
 				if (useColor)
 					stream << colors.border_color;
 				stream << "|";
@@ -309,74 +304,69 @@ namespace ctrack
 			}
 
 		public:
-			BeautifulTable(const std::vector<std::string> &headerColumns, bool enableColor = false, const ColorScheme &colors = default_colors, const std::vector<std::pair<std::string, int>> &top_header = {})
-				: top_header(top_header), header(headerColumns), useColor(enableColor), colors(colors)
+			BeautifulTable(
+				const std::vector<std::string> &headerColumns,
+				bool enableColor = false,
+				const ColorScheme &colors = default_colors,
+				const std::vector<std::pair<std::string, int>> &top_header = {}
+			) : top_header(top_header), header(headerColumns), useColor(enableColor), colors(colors)
 			{
 				updateColumnWidths(header);
 			}
 
-			void addRow(const std::vector<std::string> &row)
-			{
+			void addRow(const std::vector<std::string> &row) {
 				if (row.size() != header.size())
-				{
 					throw std::invalid_argument("Row size must match header size");
-				}
+
 				rows.push_back(row);
 				updateColumnWidths(row);
 			}
 
 			template <typename StreamType>
-			void print(StreamType &stream) const
-			{
-				if (top_header.size() > 0)
-				{
+			void print(StreamType &stream) const {
+				if (top_header.size() > 0) {
 					printHorizontalLine(stream);
 					printRow(stream, top_header, colors.top_header_color);
 				}
+
 				printHorizontalLine(stream);
 				printRow(stream, header, colors.header_color, true);
 				printHorizontalLine(stream);
-				for (const auto &row : rows)
-				{
+
+				for (const auto &row : rows) {
 					printRow(stream, row, colors.row_color);
 					printHorizontalLine(stream);
 				}
 			}
 
 			template <typename T>
-			static inline std::string table_string(const T &value)
-			{
+			static inline std::string table_string(const T &value) {
 				std::ostringstream oss;
 				oss << value;
 				return oss.str();
 			}
 
-			static inline std::string table_time(uint_fast64_t nanoseconds)
-			{
+			static inline std::string table_time(uint_fast64_t nanoseconds) {
 				return table_time(static_cast<double>(nanoseconds));
 			}
 
-			static inline std::string table_time(double nanoseconds)
-			{
+			static inline std::string table_time(double nanoseconds) {
 				const char *units[] = {"ns", "mcs", "ms", "s"};
 				int unit = 0;
 				double value = static_cast<double>(nanoseconds);
-				while (value >= 1000 && unit < 3)
-				{
+				while (value >= 1000 && unit < 3) {
 					value /= 1000;
 					unit++;
 				}
+
 				std::ostringstream oss;
 				oss << std::fixed << std::setprecision(2) << value << " " << units[unit];
 				return oss.str();
 			}
 
-			static inline std::string table_percentage(uint_fast64_t value, uint_fast64_t total)
-			{
+			static inline std::string table_percentage(uint_fast64_t value, uint_fast64_t total) {
 				if (total == 0)
-				{
 					return "nan%";
-				}
 
 				// Calculate the percentage
 				double percentage = (static_cast<double>(value) / total) * 100.0;
@@ -388,8 +378,7 @@ namespace ctrack
 				return ss.str();
 			}
 
-			static inline std::string table_timepoint(const std::chrono::high_resolution_clock::time_point &tp)
-			{
+			static inline std::string table_timepoint(const std::chrono::high_resolution_clock::time_point &tp) {
 				auto system_tp = std::chrono::system_clock::now() +
 								 std::chrono::duration_cast<std::chrono::system_clock::duration>(
 									 tp - std::chrono::high_resolution_clock::now());
@@ -397,11 +386,11 @@ namespace ctrack
 				auto tt = std::chrono::system_clock::to_time_t(system_tp);
 				std::tm tm{};
 
-#if defined(_WIN32)
-				localtime_s(&tm, &tt);
-#else
-				localtime_r(&tt, &tm);
-#endif
+				#if defined(_WIN32)
+					localtime_s(&tm, &tt);
+				#else
+					localtime_r(&tt, &tm);
+				#endif
 
 				std::ostringstream oss;
 				oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
@@ -411,14 +400,11 @@ namespace ctrack
 			static inline std::string stable_shortenPath(const std::string &fullPath, size_t maxLength = 35)
 			{
 				namespace fs = std::filesystem;
-
 				fs::path path(fullPath);
 				std::string filename = path.filename().string();
 
 				if (filename.length() <= maxLength)
-				{
 					return filename;
-				}
 
 				// If filename is too long, truncate it and add ...
 				return filename.substr(0, maxLength - 3) + "...";
@@ -782,9 +768,80 @@ namespace ctrack
 			unsigned int slowest_range{};
 		};
 
+		// Simple tolerance check for nanoseconds (as int64_t)
+		// Relative tolerance with default 15%, minimum 1ms
+		inline bool within_tolerance_relative(int64_t actual_ns, int64_t expected_ns, double tolerance_percent = 20.0) {
+			int64_t tolerance = static_cast<int64_t>(
+				std::abs(std::max(expected_ns, actual_ns)) * tolerance_percent / 100.0
+			);
+			return std::abs(actual_ns - expected_ns) <= tolerance;
+		}
+
+		inline bool within_tolerance(auto actual, auto expected, double tolerance_percent) {
+			int64_t actual_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(actual).count();
+			int64_t expected_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(expected).count();
+			return within_tolerance_relative(actual_ns, expected_ns, tolerance_percent);
+		}
+
 		struct detail_table
 		{
 			std::vector<detail_stats> rows;
+			std::unordered_map<std::string, detail_stats> by_function_name;
+			mutable std::unordered_map<std::string, int64_t> by_function_name_highscore;
+
+			bool check_same(const std::string& f1, const std::string& f2, double tolerance = 10.0) const {
+				return within_tolerance(by_function_name.at(f1).center_mean, by_function_name.at(f2).center_mean, tolerance);
+			}
+
+			bool check_faster(const std::string& f_faster, const std::string& f_slower) const {
+				return by_function_name.at(f_faster).center_mean < by_function_name.at(f_slower).center_mean;
+			}
+
+			bool check_highscore(double tolerance = 10.0, std::string filename = "ctrack_highscore.txt") const {
+			#ifdef CTRACK_ENABLE_PERSISTENCE
+				std::fstream persistence;
+				persistence.open(filename, std::ios::in | std::ios::out | std::ios::app);
+				if (!persistence)
+					return false;
+				
+				bool result = true;
+				std::string line;
+				while (!persistence.eof()) {
+					// One record per line, with the function name at the front
+					std::getline(persistence, line);
+
+					for (auto& r : rows) {
+						if (line.starts_with(r.function_name)) {
+							// Record already exists - extract it
+							int64_t* volatile hs = &by_function_name_highscore[r.function_name];
+							std::from_chars(line.data() + r.function_name.size() + 1, line.data() + line.size(), *hs);
+							std::chrono::nanoseconds expected {*hs};
+							if (!within_tolerance(r.center_mean, expected, tolerance)) {
+								if (expected > r.center_mean)
+									std::cout << "\n\033[38;5;28m[ctrack] NEW HIGHSCORE: " << r.function_name << " average execution time fell from " << expected << " to " << r.center_mean << std::endl;
+								else {
+									std::cout << "\n\033[38;5;130m[ctrack] PERFORMANCE REGRESS: " << r.function_name << " average execution time increased from " << expected << " to " << r.center_mean << std::endl;
+									result = false;
+								}
+							}
+						}
+					}
+				}
+
+				// Write missing entries
+				persistence.clear();
+				for (auto& r : rows) {
+					if (!by_function_name_highscore.contains(r.function_name)) {
+						persistence << r.function_name << " " << r.center_mean.count() << std::endl;
+					}
+				}
+
+				persistence.close();
+				return result;
+			#else
+				return true;
+			#endif
+			}
 		};
 
 		struct ctrack_result_tables
@@ -994,10 +1051,12 @@ namespace ctrack
 				// Clear existing data
 				tables.summary.rows.clear();
 				tables.details.rows.clear();
+				tables.details.by_function_name.clear();
 
 				// Reserve space for efficiency
 				tables.summary.rows.reserve(sorted_events.size());
 				tables.details.rows.reserve(sorted_events.size());
+				tables.details.by_function_name.reserve(sorted_events.size());
 
 				// Build summary and detail rows from sorted_events
 				for (const auto &entry : sorted_events)
@@ -1047,6 +1106,10 @@ namespace ctrack
 					detail_row.slowest_range = entry->slowest_range;
 
 					tables.details.rows.push_back(detail_row);
+					tables.details.by_function_name.emplace(
+						tables.details.rows.rbegin()->function_name,
+						*tables.details.rows.rbegin()
+					);
 				}
 			}
 
@@ -1292,5 +1355,3 @@ namespace ctrack
 #define CTRACK
 #define CTRACK_NAME(name)
 #endif // CTRACK_DISABLE
-
-#endif

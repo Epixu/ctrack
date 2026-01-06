@@ -4,19 +4,12 @@ project(ctrack VERSION 1.0.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Option to disable parallel processing
-option(DISABLE_PAR "Disable parallel processing" OFF)
-
-# Option to disable building examples
-option(DISABLE_EXAMPLES "Disable building examples" OFF)
-
-# Option to build benchmark (default OFF)
-option(BUILD_BENCHMARK "Build benchmark" OFF)
-
-# Option to build tests (default OFF)
-option(BUILD_TESTS "Build tests" OFF)
-
-option(ENABLE_WARNINGS "Enable warnings" OFF)
+option(DISABLE_PAR         "Disable parallel processing" OFF)
+option(DISABLE_EXAMPLES    "Disable building examples" ON)
+option(BUILD_BENCHMARK     "Build benchmark" OFF)
+option(BUILD_TESTS         "Build tests" OFF)
+option(ENABLE_WARNINGS     "Enable warnings" OFF)
+option(ENABLE_PERSISTENCE  "Enable persistence (experimental)" ON)
 
 # Check for TBB
 if(NOT MSVC AND NOT DISABLE_PAR)
@@ -43,6 +36,11 @@ if(DISABLE_PAR)
     target_compile_definitions(ctrack INTERFACE CTRACK_DISABLE_EXECUTION_POLICY)
 elseif(NOT MSVC AND TBB_FOUND)
     target_link_libraries(ctrack INTERFACE TBB::tbb)
+endif()
+
+# Configure ctrack based on persistence
+if(ENABLE_PERSISTENCE)
+    target_compile_definitions(ctrack INTERFACE CTRACK_ENABLE_PERSISTENCE)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
