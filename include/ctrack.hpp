@@ -2,6 +2,8 @@
 // License:MIT License See LICENSE for the full license.
 // https://github.com/Compaile/ctrack
 #pragma once
+#ifndef CTRACK_DISABLE
+// No need to parse all these if CTRACK is disabled
 #include <string>
 #include <iostream>
 #include <iterator>
@@ -38,9 +40,10 @@
 #define TOSTRING(x) STRINGIFY(x)
 
 // Create a string version
-#define CTRACK_VERSION_STRING      \
-	TOSTRING(CTRACK_VERSION_MAJOR) \
-	"_" TOSTRING(CTRACK_VERSION_MINOR) "_" TOSTRING(CTRACK_VERSION_PATCH)
+#define CTRACK_VERSION_STRING         \
+	    TOSTRING(CTRACK_VERSION_MAJOR) \
+	"_" TOSTRING(CTRACK_VERSION_MINOR) \
+	"_" TOSTRING(CTRACK_VERSION_PATCH)
 
 // Use the version string as the namespace name
 #define CTRACK_VERSION_NAMESPACE v##CTRACK_VERSION_MAJOR##_##CTRACK_VERSION_MINOR##_##CTRACK_VERSION_PATCH
@@ -57,108 +60,99 @@ namespace ctrack
 		#endif
 
 		template <typename T, typename Field>
-		auto sum_field(const std::vector<T> &vec, Field T::*field)
-		{
+		auto sum_field(const std::vector<T> &vec, Field T::*field) {
 			using FieldType = std::decay_t<decltype(std::declval<T>().*field)>;
 			return std::transform_reduce(
 				OPT_EXEC_POLICY
-					vec.begin(),
+				vec.begin(),
 				vec.end(),
 				FieldType{},
 				std::plus<>(),
-				[field](const auto &item)
-				{ return item.*field; });
+				[field](const auto &item) { return item.*field; }
+			);
 		}
 
 		template <typename T, typename Field>
-		auto sum_squared_field(const std::vector<T> &values, Field T::*field)
-		{
+		auto sum_squared_field(const std::vector<T> &values, Field T::*field) {
 			using FieldType = std::decay_t<decltype(std::declval<T>().*field)>;
 			return std::transform_reduce(
 				OPT_EXEC_POLICY
-					values.begin(),
+				values.begin(),
 				values.end(),
 				FieldType{},
 				std::plus<>(),
-				[field](const T &v)
-				{
+				[field](const T &v) {
 					return (v.*field) * (v.*field);
-				});
+				}
+			);
 		}
 
 		template <typename T, typename Field>
-		double calculate_std_dev_field(std::vector<T> &values, Field T::*field, const double mean)
-		{
+		double calculate_std_dev_field(std::vector<T> &values, Field T::*field, const double mean) {
 			double res = std::transform_reduce(
 				OPT_EXEC_POLICY
-					values.begin(),
+				values.begin(),
 				values.end(),
 				0.0,
 				std::plus<>(),
-				[mean, field](const T &v)
-				{
+				[mean, field](const T &v) {
 					return std::pow(static_cast<double>(v.*field) - mean, 2);
-				});
+				}
+			);
 
 			return sqrt(res / values.size());
 		}
 
 		template <typename T, typename Field>
-		auto get_distinct_field_values(const std::vector<const T *> &vec, Field T::*field)
-		{
+		auto get_distinct_field_values(const std::vector<const T *> &vec, Field T::*field) {
 			std::set<std::remove_reference_t<decltype(std::declval<T>().*field)>> distinct_values;
 
 			std::transform(vec.begin(), vec.end(),
-						   std::inserter(distinct_values, distinct_values.end()),
-						   [field](const T *item)
-						   { return item->*field; });
+				std::inserter(distinct_values, distinct_values.end()),
+				[field](const T *item) { return item->*field; }
+			);
 			return distinct_values;
 		}
 
 		template <typename T, typename Field>
-		auto get_distinct_field_values(const std::vector<T> &vec, Field T::*field)
-		{
+		auto get_distinct_field_values(const std::vector<T> &vec, Field T::*field) {
 			std::set<std::remove_reference_t<decltype(std::declval<T>().*field)>> distinct_values;
 
 			std::transform(vec.begin(), vec.end(),
-						   std::inserter(distinct_values, distinct_values.end()),
-						   [field](const T &item)
-						   { return item.*field; });
+				std::inserter(distinct_values, distinct_values.end()),
+				[field](const T &item) { return item.*field; }
+			);
 			return distinct_values;
 		}
 
 		template <typename T, typename Field>
-		size_t count_distinct_field_values(const std::vector<T> &vec, Field T::*field)
-		{
+		size_t count_distinct_field_values(const std::vector<T> &vec, Field T::*field) {
 			return get_distinct_field_values(vec, field).size();
 		}
 
 		template <typename StructType, typename MemberType>
-		void order_pointer_vector_by_field(std::vector<StructType *> &vec, MemberType StructType::*member, bool asc = true)
-		{
+		void order_pointer_vector_by_field(std::vector<StructType *> &vec, MemberType StructType::*member, bool asc = true) {
 			std::sort(OPT_EXEC_POLICY vec.begin(), vec.end(),
-					  [member, asc](const StructType *a, const StructType *b)
-					  {
-						  if (asc)
-							  return (a->*member) < (b->*member);
-						  else
-							  return (a->*member) > (b->*member);
-					  });
+			[member, asc](const StructType *a, const StructType *b) {
+				if (asc)
+					return (a->*member) < (b->*member);
+				else
+					return (a->*member) > (b->*member);
+			});
 		}
 
 		template <typename T>
-		size_t countAllEvents(const std::deque<std::vector<T>> &events)
-		{
+		size_t countAllEvents(const std::deque<std::vector<T>> &events) {
 			return std::transform_reduce(
 				OPT_EXEC_POLICY
-					events.begin(),
+				events.begin(),
 				events.end(),
 				size_t(0),
 				std::plus<>(),
-				[](const auto &vec)
-				{
+				[](const auto &vec) {
 					return vec.size();
-				});
+				}
+			);
 		}
 
 		struct ColorScheme
@@ -169,9 +163,9 @@ namespace ctrack
 			std::string row_color;
 
 			ColorScheme(const std::string &border,
-						const std::string &header,
-						const std::string &top_header,
-						const std::string &row)
+						   const std::string &header,
+						   const std::string &top_header,
+						   const std::string &row)
 				: border_color(border),
 				  header_color(header),
 				  top_header_color(top_header),
@@ -179,19 +173,24 @@ namespace ctrack
 		};
 
 		static inline const ColorScheme default_colors{
-			"\033[38;5;24m",	// Darker Blue (Border)
-			"\033[1;38;5;135m", // Purple (Header)
+			"\033[38;5;24m",		// Darker Blue (Border)
+			"\033[1;38;5;135m",  // Purple (Header)
 			"\033[1;38;5;92m",	// Darker Purple (Top Header)
 			"\033[38;5;39m"		// Light Blue (Row)
 		};
 
 		// Alternate color scheme (still nice to read on terminals)
 		static inline const ColorScheme alternate_colors{
-			"\033[38;5;28m",	// Dark Green (Border)
-			"\033[1;38;5;208m", // Orange (Header)
-			"\033[1;38;5;130m", // Dark Orange (Top Header)
+			"\033[38;5;28m",		// Dark Green (Border)
+			"\033[1;38;5;208m",  // Orange (Header)
+			"\033[1;38;5;130m",  // Dark Orange (Top Header)
 			"\033[38;5;71m"		// Light Green (Row)
 		};
+
+		using clock = std::chrono::high_resolution_clock;
+		using system_clock = std::chrono::system_clock;
+		using time_point = clock::time_point;
+		using nanosec = std::chrono::nanoseconds;
 
 		class BeautifulTable {
 		private:
@@ -204,16 +203,11 @@ namespace ctrack
 			static inline const std::string RESET_COLOR = "\033[0m";
 
 			void updateColumnWidths(const std::vector<std::string> &row) {
-				for (size_t i = 0; i < row.size(); ++i)
-				{
+				for (size_t i = 0; i < row.size(); ++i) {
 					if (i >= columnWidths.size())
-					{
 						columnWidths.push_back(row[i].length());
-					}
 					else
-					{
 						columnWidths[i] = std::max<size_t>(columnWidths[i], row[i].length());
-					}
 				}
 			}
 
@@ -221,13 +215,15 @@ namespace ctrack
 			void printHorizontalLine(StreamType &stream) const {
 				if (useColor)
 					stream << colors.border_color;
+
 				stream << "+";
+
 				for (size_t width : columnWidths)
-				{
 					stream << std::string(width + 2, '-') << "+";
-				}
+
 				if (useColor)
 					stream << RESET_COLOR;
+
 				stream << "\n";
 			}
 
@@ -235,30 +231,35 @@ namespace ctrack
 			void printRow(StreamType &stream, const std::vector<std::string> &row, const std::string &color, bool center = false) const {
 				if (useColor)
 					stream << colors.border_color;
+
 				stream << "|";
+
 				if (useColor)
 					stream << RESET_COLOR << color;
-				for (size_t i = 0; i < row.size(); ++i)
-				{
-					if (center)
-					{
+
+				for (size_t i = 0; i < row.size(); ++i) {
+					if (center) {
 						size_t padding = columnWidths[i] - row[i].length();
 						size_t leftPadding = padding / 2;
 						size_t rightPadding = padding - leftPadding;
 						stream << std::string(leftPadding + 1, ' ') << row[i] << std::string(rightPadding + 1, ' ');
 					}
-					else
-					{
+					else {
 						stream << " " << std::setw(static_cast<int32_t>(columnWidths[i])) << std::right << row[i] << " ";
 					}
+
 					if (useColor)
 						stream << RESET_COLOR << colors.border_color;
+
 					stream << "|";
+
 					if (useColor)
 						stream << RESET_COLOR << color;
 				}
+
 				if (useColor)
 					stream << RESET_COLOR;
+
 				stream << "\n";
 			}
 
@@ -270,13 +271,11 @@ namespace ctrack
 				if (useColor)
 					stream << RESET_COLOR << color;
 				int y = 0;
-				for (size_t i = 0; i < row.size(); ++i)
-				{
+				for (size_t i = 0; i < row.size(); ++i) {
 					size_t sum = row[i].second - 1;
 					for (int x = y; x < y + row[i].second; x++)
-					{
 						sum += columnWidths[x] + 2;
-					}
+
 					y += row[i].second;
 
 					size_t textWidth = row[i].first.length();
@@ -309,8 +308,9 @@ namespace ctrack
 				bool enableColor = false,
 				const ColorScheme &colors = default_colors,
 				const std::vector<std::pair<std::string, int>> &top_header = {}
-			) : top_header(top_header), header(headerColumns), useColor(enableColor), colors(colors)
-			{
+			) : top_header(top_header)
+			  , header(headerColumns)
+			  , useColor(enableColor), colors(colors) {
 				updateColumnWidths(header);
 			}
 
@@ -378,12 +378,10 @@ namespace ctrack
 				return ss.str();
 			}
 
-			static inline std::string table_timepoint(const std::chrono::high_resolution_clock::time_point &tp) {
-				auto system_tp = std::chrono::system_clock::now() +
-								 std::chrono::duration_cast<std::chrono::system_clock::duration>(
-									 tp - std::chrono::high_resolution_clock::now());
-
-				auto tt = std::chrono::system_clock::to_time_t(system_tp);
+			static inline std::string table_timepoint(const time_point& tp) {
+				auto system_tp = system_clock::now()
+					+ std::chrono::duration_cast<system_clock::duration>(tp - clock::now());
+				auto tt = system_clock::to_time_t(system_tp);
 				std::tm tm{};
 
 				#if defined(_WIN32)
@@ -397,8 +395,7 @@ namespace ctrack
 				return oss.str();
 			}
 
-			static inline std::string stable_shortenPath(const std::string &fullPath, size_t maxLength = 35)
-			{
+			static inline std::string stable_shortenPath(const std::string &fullPath, size_t maxLength = 35) {
 				namespace fs = std::filesystem;
 				fs::path path(fullPath);
 				std::string filename = path.filename().string();
@@ -413,125 +410,135 @@ namespace ctrack
 			using bt = BeautifulTable;
 		};
 
-		struct Event
-		{
-			std::chrono::high_resolution_clock::time_point start_time;
-			std::chrono::high_resolution_clock::time_point end_time;
+		struct Event {
+			time_point start_time;
+			time_point end_time;
 			int line;
 			int thread_id;
 			std::string_view filename;
 			std::string_view function;
-			unsigned int event_id;
-			Event(const std::chrono::high_resolution_clock::time_point &start_time, const std::chrono::high_resolution_clock::time_point &end_time, const std::string_view filename, const int line, const std::string_view function, const int thread_id, const unsigned int event_id)
-				: start_time(start_time), end_time(end_time), line(line), thread_id(thread_id), filename(filename), function(function), event_id(event_id)
-			{
-			}
+			unsigned event_id;
+			bool persistent;
+
+			Event(
+				const time_point &start_time,
+				const time_point &end_time,
+				const std::string_view filename,
+				const int line,
+				const std::string_view function,
+				const int thread_id,
+				const unsigned event_id,
+				const bool persist
+			)  : start_time(start_time)
+				, end_time(end_time)
+				, line(line)
+				, thread_id(thread_id)
+				, filename(filename)
+				, function(function)
+				, event_id(event_id)
+				, persistent(persist) {}
 		};
 
-		struct Simple_Event
-		{
+		struct Simple_Event {
 			uint_fast64_t duration = 0;
-			std::chrono::high_resolution_clock::time_point start_time{};
+			time_point start_time{};
 			int_fast64_t unique_id = 0;
-			std::chrono::high_resolution_clock::time_point end_time{};
-			Simple_Event(const std::chrono::high_resolution_clock::time_point &start_time, const std::chrono::high_resolution_clock::time_point &end_time, const uint_fast64_t duration, const int_fast64_t unique_id) : duration(duration), start_time(start_time), unique_id(unique_id), end_time(end_time) {}
+			time_point end_time{};
+			Simple_Event(const time_point &start_time, const time_point &end_time, const uint_fast64_t duration, const int_fast64_t unique_id)
+				: duration(duration), start_time(start_time), unique_id(unique_id), end_time(end_time) {}
 			Simple_Event() {}
 		};
 
-		inline bool cmp_simple_event_by_duration_asc(const Simple_Event &a, const Simple_Event &b)
-		{
+		inline bool cmp_simple_event_by_duration_asc(const Simple_Event &a, const Simple_Event &b) {
 			return a.duration < b.duration;
 		}
-		inline bool cmp_simple_event_by_start_time_asc(const Simple_Event &a, const Simple_Event &b)
-		{
+
+		inline bool cmp_simple_event_by_start_time_asc(const Simple_Event &a, const Simple_Event &b) {
 			return a.start_time < b.start_time;
 		}
 
-		inline uint_fast64_t get_unique_event_id(unsigned int thread_id, unsigned int event_id)
-		{
+		inline uint_fast64_t get_unique_event_id(unsigned thread_id, unsigned event_id) {
 			uint_fast64_t uniqueId = static_cast<uint_fast64_t>(thread_id);
 			uniqueId = uniqueId << 32;
 			uniqueId += static_cast<uint_fast64_t>(event_id);
 			return uniqueId;
 		}
 
-		inline std::vector<Simple_Event> create_simple_events(const std::vector<Event> &events)
-		{
+		inline std::vector<Simple_Event> create_simple_events(const std::vector<Event> &events) {
 			std::vector<Simple_Event> simple_events{};
 			simple_events.resize(events.size());
 			std::transform(
 				OPT_EXEC_POLICY
-					events.begin(),
+				events.begin(),
 				events.end(),
 				simple_events.begin(),
-				[](const Event &event)
-				{
-					Simple_Event simple_event(event.start_time, event.end_time, std::chrono::duration_cast<std::chrono::nanoseconds>(event.end_time - event.start_time).count(), get_unique_event_id(event.thread_id, event.event_id));
+				[](const Event &event) {
+					Simple_Event simple_event(event.start_time, event.end_time,
+						std::chrono::duration_cast<nanosec>(event.end_time - event.start_time).count(),
+						get_unique_event_id(event.thread_id, event.event_id)
+					);
 					return simple_event;
-				});
+				}
+			);
 			return simple_events;
 		}
 
-		inline std::vector<Simple_Event> create_simple_events(const std::vector<const Event *> &events)
-		{
+		inline std::vector<Simple_Event> create_simple_events(const std::vector<const Event *> &events) {
 			std::vector<Simple_Event> simple_events{};
 			simple_events.resize(events.size());
 			std::transform(
 				OPT_EXEC_POLICY
-					events.begin(),
+				events.begin(),
 				events.end(),
 				simple_events.begin(),
-				[](const Event *event)
-				{
-					Simple_Event simple_event(event->start_time, event->end_time, std::chrono::duration_cast<std::chrono::nanoseconds>(event->end_time - event->start_time).count(), get_unique_event_id(event->thread_id, event->event_id));
+				[](const Event *event) {
+					Simple_Event simple_event(event->start_time, event->end_time,
+						std::chrono::duration_cast<nanosec>(event->end_time - event->start_time).count(),
+						get_unique_event_id(event->thread_id, event->event_id)
+					);
 					return simple_event;
-				});
+				}
+			);
 			return simple_events;
 		}
 
 		// requires already sorted
-		inline std::vector<Simple_Event> sorted_create_grouped_simple_events(const std::vector<Simple_Event> &events)
-		{
+		inline std::vector<Simple_Event> sorted_create_grouped_simple_events(const std::vector<Simple_Event> &events) {
 			std::vector<Simple_Event> result{};
 			if (events.size() == 0)
 				return result;
 			result.push_back(events[0]);
 			unsigned int current_idx = 0;
 
-			for (size_t i = 1; i < events.size(); i++)
-			{
-				if (result[current_idx].end_time >= events[i].start_time)
-				{
-					result[current_idx].end_time = std::max<std::chrono::high_resolution_clock::time_point>(result[current_idx].end_time, events[i].end_time);
+			for (size_t i = 1; i < events.size(); i++) {
+				if (result[current_idx].end_time >= events[i].start_time) {
+					result[current_idx].end_time = std::max<time_point>(result[current_idx].end_time, events[i].end_time);
 				}
-				else
-				{
+				else {
 					result.push_back(events[i]);
 					current_idx++;
 				}
 			}
 
-			for (auto &entry : result)
-			{
-				entry.duration = std::chrono::duration_cast<std::chrono::nanoseconds>(entry.end_time - entry.start_time).count();
+			for (auto &entry : result) {
+				entry.duration = std::chrono::duration_cast<nanosec>(entry.end_time - entry.start_time).count();
 			}
 
 			return result;
 		}
 
-		inline std::vector<Simple_Event> load_child_events_simple(const std::vector<Simple_Event> &parent_events_simple,
-																  const std::unordered_map<int_fast64_t, const Event *> &events_map, const std::unordered_map<int_fast64_t, std::vector<int_fast64_t>> &child_graph)
-		{
+		inline std::vector<Simple_Event> load_child_events_simple(
+			const std::vector<Simple_Event> &parent_events_simple,
+			const std::unordered_map<int_fast64_t, const Event*> &events_map,
+			const std::unordered_map<int_fast64_t, std::vector<int_fast64_t>> &child_graph
+		) {
 			std::vector<const Event *> child_events{};
 
 			// std::set< int_fast64_t> parent_ids = get_distinct_field_values(parent_events_simple, &Simple_Event::unique_id);
-			for (const auto &simple_parent_event : parent_events_simple)
-			{
+			for (const auto &simple_parent_event : parent_events_simple) {
 				auto it = child_graph.find(simple_parent_event.unique_id);
-				if (it != child_graph.end())
-				{
-					for (auto &child_id : it->second)
-					{
+				if (it != child_graph.end()) {
+					for (auto &child_id : it->second) {
 						auto &child_event = events_map.at(child_id);
 						auto &parent_event = events_map.at(simple_parent_event.unique_id);
 						if (child_event->filename == parent_event->filename &&
@@ -547,11 +554,13 @@ namespace ctrack
 			return create_simple_events(child_events);
 		};
 
-		class EventGroup
-		{
+		class EventGroup {
 		public:
-			void calculateStats(unsigned int non_center_percent, const std::unordered_map<int_fast64_t, const Event *> &events_map, const std::unordered_map<int_fast64_t, std::vector<int_fast64_t>> &child_graph)
-			{
+			void calculateStats(
+				unsigned non_center_percent,
+				const std::unordered_map<int_fast64_t, const Event*> &events_map,
+				const std::unordered_map<int_fast64_t, std::vector<int_fast64_t>> &child_graph
+			) {
 				if (all_events.size() == 0)
 					return;
 
@@ -583,23 +592,16 @@ namespace ctrack
 				if (all_cnt > 2)
 					center_events_simple.reserve(all_cnt - 2 * amount_non_center);
 
-				for (unsigned int i = 0; i < all_events_simple.size(); i++)
-				{
+				for (unsigned int i = 0; i < all_events_simple.size(); i++) {
 					if (i < amount_non_center)
-					{
 						fastest_events_simple.push_back(all_events_simple[i]);
-					}
 					else if (i >= all_cnt - amount_non_center)
-					{
 						slowest_events_simple.push_back(all_events_simple[i]);
-					}
 					else
-					{
 						center_events_simple.push_back(all_events_simple[i]);
-					}
 				}
-				if (amount_non_center > 0)
-				{
+
+				if (amount_non_center > 0) {
 					// fastest
 					fastest_min = fastest_events_simple[0].duration;
 					fastest_mean = sum_field(fastest_events_simple, &Simple_Event::duration) / static_cast<double>(amount_non_center);
@@ -642,21 +644,21 @@ namespace ctrack
 			double all_cv = 0.0;
 			double all_st = 0.0;
 
-			unsigned int all_cnt = 0;
+			unsigned all_cnt = 0;
 			uint_fast64_t all_time_acc = 0;
 			uint_fast64_t all_time_active = 0;
 			uint_fast64_t all_time_active_exclusive = 0;
-			unsigned int all_thread_cnt = 0;
+			unsigned all_thread_cnt = 0;
 			std::vector<Simple_Event> all_grouped = {};
 			std::vector<const Event *> all_events = {};
 
 			// fastest_group
-			unsigned int fastest_range = 0;
+			unsigned fastest_range = 0;
 			uint_fast64_t fastest_min = 0;
 			double fastest_mean = 0.0;
 
 			// slowest group
-			unsigned int slowest_range = 0;
+			unsigned slowest_range = 0;
 			uint_fast64_t slowest_max = 0;
 			double slowest_mean = 0.0;
 
@@ -673,18 +675,18 @@ namespace ctrack
 			std::string filename = {};
 			std::string function_name = {};
 			int line = 0;
+			bool persistent = false;
 
 		private:
 		};
 
 		typedef std::vector<Event> t_events;
-		typedef std::map<unsigned int, std::vector<unsigned int>> sub_events;
+		typedef std::map<unsigned, std::vector<unsigned>> sub_events;
 
-		struct store
-		{
+		struct store {
 			inline static std::atomic<bool> write_events_locked = false;
 			inline static std::mutex event_mutex;
-			inline static std::chrono::high_resolution_clock::time_point track_start_time = std::chrono::high_resolution_clock::now();
+			inline static time_point track_start_time = clock::now();
 			inline static std::atomic<unsigned int> store_clear_cnt = 0;
 
 			inline static std::atomic<int> thread_cnt = -1;
@@ -696,12 +698,12 @@ namespace ctrack
 			inline static std::deque<int> a_thread_ids{};
 		};
 
-		inline thread_local t_events *event_ptr = nullptr;
+		inline thread_local t_events   *event_ptr = nullptr;
 		inline thread_local sub_events *sub_events_ptr = nullptr;
 
-		inline thread_local unsigned int *current_event_id = nullptr;
-		inline thread_local unsigned int *current_event_cnt = nullptr;
-		inline thread_local unsigned int *string_id = nullptr;
+		inline thread_local unsigned *current_event_id = nullptr;
+		inline thread_local unsigned *current_event_cnt = nullptr;
+		inline thread_local unsigned *string_id = nullptr;
 
 		inline thread_local int *thread_id = nullptr;
 
@@ -709,67 +711,62 @@ namespace ctrack
 		typedef std::map<std::string_view, line_result> function_result;
 		typedef std::map<std::string_view, function_result> filename_result;
 
-		struct ctrack_result_settings
-		{
+		struct ctrack_result_settings {
 			unsigned int non_center_percent = 1;
 			double min_percent_active_exclusive = 0.0;			   // between 0-100
 			double percent_exclude_fastest_active_exclusive = 0.0; // between 0-100
 		};
 
-		struct summary_row
-		{
+		struct summary_row {
 			std::string filename;
 			std::string function_name;
 			int line{};
 			int calls{};
 			double percent_ae_bracket{}; // ae[center]% by configuration
 			double percent_ae_all{};	 // ae[0-100]%
-			std::chrono::nanoseconds time_ae_all{};
-			std::chrono::nanoseconds time_a_all{};
+			nanosec time_ae_all{};
+			nanosec time_a_all{};
 		};
 
-		struct summary_table
-		{
+		struct summary_table {
 			std::vector<summary_row> rows;
 		};
 
-		struct detail_stats
-		{
-			// Info fields
+		struct detail_stats {
+			// Info fields											
 			std::string filename;
 			std::string function_name;
 			int line{};
-			std::chrono::nanoseconds time_acc{}; // Simple sum of all execution times (can exceed wall clock in MT)
-			std::chrono::nanoseconds sd{};		 // Standard deviation
-			double cv{};						 // Coefficient of variation (sd/mean)
-			int calls{};						 // Total number of calls
-			int threads{};						 // Number of different threads that called this function
+			nanosec time_acc{};				// Simple sum of all execution times (can exceed wall clock in MT)
+			nanosec sd{};						// Standard deviation
+			double cv{};						// Coefficient of variation (sd/mean)
+			int calls{};						// Total number of calls
+			int threads{};						// Number of different threads that called this function
+			bool persistent = false;
 
-			// Summary-like fields (for unified access)
-			double percent_ae_bracket{};			// ae[center]% as percentage of total time
-			double percent_ae_all{};				// ae[0-100]% as percentage of total time
-			std::chrono::nanoseconds time_ae_all{}; // Active exclusive time (wall clock minus child functions)
-			std::chrono::nanoseconds time_a_all{};	// Active time (actual wall clock time, handles MT overlap)
+			// Summary-like fields (for unified access)	
+			double  percent_ae_bracket{};	// ae[center]% as percentage of total time
+			double  percent_ae_all{};		// ae[0-100]% as percentage of total time
+			nanosec time_ae_all{};			// Active exclusive time (wall clock minus child functions)
+			nanosec time_a_all{};			// Active time (actual wall clock time, handles MT overlap)
 
-			// Fastest/Center/Slowest stats
-			std::chrono::nanoseconds fastest_min{};
-			std::chrono::nanoseconds fastest_mean{};
-			std::chrono::nanoseconds center_min{};
-			std::chrono::nanoseconds center_mean{};
-			std::chrono::nanoseconds center_med{};
-			std::chrono::nanoseconds center_time_a{};  // Active time for center range
-			std::chrono::nanoseconds center_time_ae{}; // Active exclusive time for center range
-			std::chrono::nanoseconds center_max{};
-			std::chrono::nanoseconds slowest_mean{};
-			std::chrono::nanoseconds slowest_max{};
+			// Fastest/Center/Slowest stats					
+			nanosec fastest_min{};
+			nanosec fastest_mean{};
+			nanosec center_min{};
+			nanosec center_mean{};
+			nanosec center_med{};
+			nanosec center_time_a{};		// Active time for center range
+			nanosec center_time_ae{};		// Active exclusive time for center range
+			nanosec center_max{};
+			nanosec slowest_mean{};
+			nanosec slowest_max{};
 
-			// Percentile ranges for reference
-			unsigned int fastest_range{};
-			unsigned int slowest_range{};
+			// Percentile ranges for reference				
+			unsigned fastest_range{};
+			unsigned slowest_range{};
 		};
 
-		// Simple tolerance check for nanoseconds (as int64_t)
-		// Relative tolerance with default 15%, minimum 1ms
 		inline bool within_tolerance_relative(int64_t actual_ns, int64_t expected_ns, double tolerance_percent = 20.0) {
 			int64_t tolerance = static_cast<int64_t>(
 				std::abs(std::max(expected_ns, actual_ns)) * tolerance_percent / 100.0
@@ -778,18 +775,17 @@ namespace ctrack
 		}
 
 		inline bool within_tolerance(auto actual, auto expected, double tolerance_percent) {
-			int64_t actual_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(actual).count();
-			int64_t expected_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(expected).count();
+			int64_t actual_ns = std::chrono::duration_cast<nanosec>(actual).count();
+			int64_t expected_ns = std::chrono::duration_cast<nanosec>(expected).count();
 			return within_tolerance_relative(actual_ns, expected_ns, tolerance_percent);
 		}
 
-		struct detail_table
-		{
+		struct detail_table {
 			std::vector<detail_stats> rows;
 			std::unordered_map<std::string, detail_stats> by_function_name;
 			mutable std::unordered_map<std::string, int64_t> by_function_name_highscore;
 
-			bool check_same(const std::string& f1, const std::string& f2, double tolerance = 10.0) const {
+			bool check_same(const std::string& f1, const std::string& f2, double tolerance = 20.0) const {
 				return within_tolerance(by_function_name.at(f1).center_mean, by_function_name.at(f2).center_mean, tolerance);
 			}
 
@@ -797,7 +793,7 @@ namespace ctrack
 				return by_function_name.at(f_faster).center_mean < by_function_name.at(f_slower).center_mean;
 			}
 
-			bool check_highscore(double tolerance = 10.0, std::string filename = "ctrack_highscore.txt") const {
+			bool check_highscore(double tolerance = 20.0, std::string filename = "ctrack_highscore.txt") const {
 			#ifdef CTRACK_ENABLE_PERSISTENCE
 				std::fstream persistence;
 				persistence.open(filename, std::ios::in | std::ios::out | std::ios::app);
@@ -811,11 +807,14 @@ namespace ctrack
 					std::getline(persistence, line);
 
 					for (auto& r : rows) {
+						if (!r.persistent)
+							continue;
+
 						if (line.starts_with(r.function_name)) {
 							// Record already exists - extract it
 							int64_t* volatile hs = &by_function_name_highscore[r.function_name];
 							std::from_chars(line.data() + r.function_name.size() + 1, line.data() + line.size(), *hs);
-							std::chrono::nanoseconds expected {*hs};
+							nanosec expected {*hs};
 							if (!within_tolerance(r.center_mean, expected, tolerance)) {
 								if (expected > r.center_mean)
 									std::cout << "\n\033[38;5;28m[ctrack] NEW HIGHSCORE: " << r.function_name << " average execution time fell from " << expected << " to " << r.center_mean << std::endl;
@@ -831,6 +830,9 @@ namespace ctrack
 				// Write missing entries
 				persistence.clear();
 				for (auto& r : rows) {
+					if (!r.persistent)
+						continue;
+
 					if (!by_function_name_highscore.contains(r.function_name)) {
 						persistence << r.function_name << " " << r.center_mean.count() << std::endl;
 					}
@@ -844,13 +846,12 @@ namespace ctrack
 			}
 		};
 
-		struct ctrack_result_tables
-		{
+		struct ctrack_result_tables {
 			// Meta information
-			std::chrono::high_resolution_clock::time_point start_time;
-			std::chrono::high_resolution_clock::time_point end_time;
-			std::chrono::nanoseconds time_total{};
-			std::chrono::nanoseconds time_ctracked{};
+			time_point start_time;
+			time_point end_time;
+			nanosec time_total{};
+			nanosec time_ctracked{};
 
 			// Table data
 			summary_table summary;
@@ -860,76 +861,112 @@ namespace ctrack
 			ctrack_result_settings settings;
 		};
 
-		class ctrack_result
-		{
+		class ctrack_result {
 		public:
-			ctrack_result(const ctrack_result_settings &settings, const std::chrono::high_resolution_clock::time_point &track_start_time, const std::chrono::high_resolution_clock::time_point &track_end_time) : settings(settings), track_start_time(track_start_time), track_end_time(track_end_time)
-			{
-				time_total = std::chrono::duration_cast<std::chrono::nanoseconds>(
-								 track_end_time - track_start_time)
-								 .count();
+			ctrack_result(
+				const ctrack_result_settings &settings,
+				const time_point &track_start_time,
+				const time_point &track_end_time
+			)  : settings(settings)
+				, track_start_time(track_start_time)
+				, track_end_time(track_end_time) {
+				time_total = std::chrono::duration_cast<nanosec>(track_end_time - track_start_time).count();
 				center_intervall_str = "[" + std::to_string(settings.non_center_percent) + "-" + std::to_string(100 - settings.non_center_percent) + "]";
 			}
 
 			template <typename StreamType>
-			void get_summary_table(StreamType &stream, bool use_color = false)
-			{
-				BeautifulTable info({
-										"Start",
-										"End",
-										"time total",
-										"time ctracked",
-										"time ctracked %",
-									},
-									use_color, alternate_colors);
-				info.addRow({BeautifulTable::table_timepoint(tables.start_time), BeautifulTable::table_timepoint(tables.end_time),
-							 BeautifulTable::table_time(static_cast<uint_fast64_t>(tables.time_total.count())), BeautifulTable::table_time(static_cast<uint_fast64_t>(tables.time_ctracked.count())),
-							 BeautifulTable::table_percentage(static_cast<uint_fast64_t>(tables.time_ctracked.count()), static_cast<uint_fast64_t>(tables.time_total.count()))});
+			void get_summary_table(StreamType &stream, bool use_color = false) {
+				BeautifulTable info(
+					{  "Start",
+						"End",
+						"time total",
+						"time ctracked",
+						"time ctracked %",
+					},
+					use_color, alternate_colors
+				);
+
+				info.addRow({
+					BeautifulTable::table_timepoint(tables.start_time),
+					BeautifulTable::table_timepoint(tables.end_time),
+					BeautifulTable::table_time(static_cast<uint_fast64_t>(tables.time_total.count())),
+					BeautifulTable::table_time(static_cast<uint_fast64_t>(tables.time_ctracked.count())),
+					BeautifulTable::table_percentage(static_cast<uint_fast64_t>(tables.time_ctracked.count()),
+						static_cast<uint_fast64_t>(tables.time_total.count()))
+				});
 
 				info.print(stream);
-				BeautifulTable table({"filename", "function", "line", "calls", "ae" + center_intervall_str + "%", "ae[0-100]%",
-									  "time ae[0-100]", "time a[0-100]"},
-									 use_color, alternate_colors);
-				for (const auto &row : tables.summary.rows)
-				{
-					table.addRow({BeautifulTable::stable_shortenPath(row.filename), row.function_name, BeautifulTable::table_string(row.line),
-								  BeautifulTable::table_string(row.calls),
-								  BeautifulTable::table_percentage(static_cast<uint_fast64_t>(row.percent_ae_bracket * tables.time_total.count() / 100.0), static_cast<uint_fast64_t>(tables.time_total.count())),
-								  BeautifulTable::table_percentage(static_cast<uint_fast64_t>(row.percent_ae_all * tables.time_total.count() / 100.0), static_cast<uint_fast64_t>(tables.time_total.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(row.time_ae_all.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(row.time_a_all.count()))});
+
+				BeautifulTable table(
+					{ "filename",
+					  "function",
+					  "line",
+					  "calls",
+					  "ae" + center_intervall_str + "%",
+					  "ae[0-100]%",
+					  "time ae[0-100]",
+					  "time a[0-100]"
+					},
+					use_color, alternate_colors
+				);
+
+				for (const auto &row : tables.summary.rows) {
+					table.addRow({
+						BeautifulTable::stable_shortenPath(row.filename),
+						row.function_name,
+						BeautifulTable::table_string(row.line),
+						BeautifulTable::table_string(row.calls),
+						BeautifulTable::table_percentage(static_cast<uint_fast64_t>(row.percent_ae_bracket * tables.time_total.count() / 100.0),
+							static_cast<uint_fast64_t>(tables.time_total.count())),
+						BeautifulTable::table_percentage(static_cast<uint_fast64_t>(row.percent_ae_all * tables.time_total.count() / 100.0),
+							static_cast<uint_fast64_t>(tables.time_total.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(row.time_ae_all.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(row.time_a_all.count()))
+					});
 				}
 
 				table.print(stream);
 			}
 
 			template <typename StreamType>
-			void get_detail_table(StreamType &stream, bool use_color = false, bool reverse_vector = false)
-			{
+			void get_detail_table(StreamType &stream, bool use_color = false, bool reverse_vector = false) {
 				auto details_copy = tables.details.rows;
 				if (reverse_vector)
-				{
 					std::reverse(details_copy.begin(), details_copy.end());
-				}
-				for (int i = static_cast<int>(details_copy.size()) - 1; i >= 0; i--)
-				{
+
+				for (int i = static_cast<int>(details_copy.size()) - 1; i >= 0; i--) {
 					const auto &detail = details_copy[i];
 
 					BeautifulTable info({"filename", "function", "line", "time acc", "sd", "cv", "calls", "threads"}, use_color, default_colors);
-					info.addRow({BeautifulTable::stable_shortenPath(detail.filename), detail.function_name, BeautifulTable::table_string(detail.line),
-								 BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.time_acc.count())),
-								 BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.sd.count())), BeautifulTable::table_string(detail.cv),
-								 BeautifulTable::table_string(detail.calls), BeautifulTable::table_string(detail.threads)});
+					info.addRow({
+						BeautifulTable::stable_shortenPath(detail.filename),
+						detail.function_name,
+						BeautifulTable::table_string(detail.line),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.time_acc.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.sd.count())),
+						BeautifulTable::table_string(detail.cv),
+						BeautifulTable::table_string(detail.calls),
+						BeautifulTable::table_string(detail.threads)}
+					);
 
-					BeautifulTable table({"min", "mean", "min", "mean", "med", "time a", "time ae", "max", "mean", "max"}, use_color, default_colors,
-										 {{"fastest[0-" + std::to_string(detail.fastest_range) + "]%", 2}, {"center" + center_intervall_str + "%", 6}, {"slowest[" + std::to_string(detail.slowest_range) + "-100]%", 2}});
+					BeautifulTable table({
+						"min", "mean", "min", "mean", "med", "time a",
+						"time ae", "max", "mean", "max"},
+						use_color, default_colors,
+						{{"fastest[0-" + std::to_string(detail.fastest_range) + "]%", 2}, {"center" + center_intervall_str + "%", 6}, {"slowest[" + std::to_string(detail.slowest_range) + "-100]%", 2}});
 
-					table.addRow({BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.fastest_min.count())), BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.fastest_mean.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_min.count())), BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_mean.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_med.count())), BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_time_a.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_time_ae.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_max.count())),
-								  BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.slowest_mean.count())), BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.slowest_max.count()))});
+					table.addRow({
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.fastest_min.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.fastest_mean.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_min.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_mean.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_med.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_time_a.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_time_ae.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.center_max.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.slowest_mean.count())),
+						BeautifulTable::table_time(static_cast<uint_fast64_t>(detail.slowest_max.count()))}
+					);
 
 					info.print(stream);
 					table.print(stream);
@@ -938,17 +975,13 @@ namespace ctrack
 				}
 			}
 
-			void calculate_stats()
-			{
+			void calculate_stats() {
 				std::vector<Simple_Event> grouped_events{};
-				for (auto &[filename, filename_entry] : f_res)
-				{
+				for (auto &[filename, filename_entry] : f_res) {
 					ctracked_files++;
-					for (auto &[function, function_entry] : filename_entry)
-					{
+					for (auto &[function, function_entry] : filename_entry) {
 						ctracked_functions++;
-						for (auto &[line, line_entry] : function_entry)
-						{
+						for (auto &[line, line_entry] : function_entry) {
 							ctracked_uses++;
 							line_entry.filename = filename;
 							line_entry.function_name = function;
@@ -973,49 +1006,48 @@ namespace ctrack
 
 				uint_fast64_t min_time_active_exclusive = static_cast<uint_fast64_t>(time_total * settings.min_percent_active_exclusive / 100);
 				// remove fastest keep in mind fastest elements are at the back
-				if (min_time_active_exclusive > 0)
-					sorted_events.erase(std::remove_if(sorted_events.begin(), sorted_events.end(), [min_time_active_exclusive](EventGroup *e)
-													   { return e->all_time_active_exclusive < min_time_active_exclusive; }),
-										sorted_events.end());
+				if (min_time_active_exclusive > 0) {
+					sorted_events.erase(
+						std::remove_if(
+							sorted_events.begin(), sorted_events.end(),
+							[min_time_active_exclusive](EventGroup *e) {
+								return e->all_time_active_exclusive < min_time_active_exclusive; 
+							}
+						),
+						sorted_events.end()
+					);
+				}
 
 				// Build the structured result tables
 				build_result_tables();
 			}
 
-			void move_events_from_store(std::deque<t_events> &events)
-			{
+			void move_events_from_store(std::deque<t_events> &events) {
 				m_events_storage = std::move(events);
 			}
 
-			void populate_maps()
-			{
+			void populate_maps() {
 				size_t total_events = 0;
 				for (const auto &event_vec : m_events_storage)
-				{
 					total_events += event_vec.size();
-				}
+
 				a_events.reserve(total_events);
 
-				for (const auto &event_vec : m_events_storage)
-				{
-					for (const auto &event : event_vec)
-					{
-						f_res[event.filename][event.function][event.line].all_events.push_back(&event);
+				for (const auto &event_vec : m_events_storage) {
+					for (const auto &event : event_vec) {
+						auto& pick = f_res[event.filename][event.function][event.line];
+						pick.all_events.push_back(&event);
+						pick.persistent |= event.persistent;
 						a_events.insert({get_unique_event_id(event.thread_id, event.event_id), &event});
 					}
 				}
 			}
 
-			void add_sub_events(const sub_events &s_events, const unsigned int thread_id_)
-			{
-
-				for (auto const &[key, val] : s_events)
-				{
+			void add_sub_events(const sub_events &s_events, const unsigned int thread_id_) {
+				for (auto const &[key, val] : s_events) {
 					int_fast64_t parent_id = get_unique_event_id(thread_id_, key);
 					for (const auto &child : val)
-					{
 						child_graph[parent_id].push_back(get_unique_event_id(thread_id_, child));
-					}
 				}
 			}
 
@@ -1024,7 +1056,7 @@ namespace ctrack
 
 			std::unordered_map<int_fast64_t, std::vector<int_fast64_t>> child_graph{};
 			ctrack_result_settings settings;
-			std::chrono::high_resolution_clock::time_point track_start_time, track_end_time;
+			time_point track_start_time, track_end_time;
 			uint_fast64_t time_total;
 			uint_fast64_t sum_time_active_exclusive = 0;
 
@@ -1039,13 +1071,12 @@ namespace ctrack
 		private:
 			std::deque<t_events> m_events_storage;
 
-			void build_result_tables()
-			{
+			void build_result_tables() {
 				// Populate meta information
 				tables.start_time = track_start_time;
 				tables.end_time = track_end_time;
-				tables.time_total = std::chrono::nanoseconds(time_total);
-				tables.time_ctracked = std::chrono::nanoseconds(sum_time_active_exclusive);
+				tables.time_total = nanosec(time_total);
+				tables.time_ctracked = nanosec(sum_time_active_exclusive);
 				tables.settings = settings;
 
 				// Clear existing data
@@ -1059,8 +1090,7 @@ namespace ctrack
 				tables.details.by_function_name.reserve(sorted_events.size());
 
 				// Build summary and detail rows from sorted_events
-				for (const auto &entry : sorted_events)
-				{
+				for (const auto &entry : sorted_events) {
 					// Build summary row
 					summary_row sum_row;
 					sum_row.filename = std::string(entry->filename);
@@ -1069,8 +1099,8 @@ namespace ctrack
 					sum_row.calls = entry->all_cnt;
 					sum_row.percent_ae_bracket = (time_total > 0) ? (static_cast<double>(entry->center_time_active_exclusive) / time_total * 100.0) : 0.0;
 					sum_row.percent_ae_all = (time_total > 0) ? (static_cast<double>(entry->all_time_active_exclusive) / time_total * 100.0) : 0.0;
-					sum_row.time_ae_all = std::chrono::nanoseconds(entry->all_time_active_exclusive);
-					sum_row.time_a_all = std::chrono::nanoseconds(entry->all_time_active);
+					sum_row.time_ae_all = nanosec(entry->all_time_active_exclusive);
+					sum_row.time_a_all = nanosec(entry->all_time_active);
 					tables.summary.rows.push_back(sum_row);
 
 					// Build detail row
@@ -1078,29 +1108,30 @@ namespace ctrack
 					detail_row.filename = std::string(entry->filename);
 					detail_row.function_name = std::string(entry->function_name);
 					detail_row.line = entry->line;
-					detail_row.time_acc = std::chrono::nanoseconds(entry->all_time_acc);
-					detail_row.sd = std::chrono::nanoseconds(static_cast<uint_fast64_t>(entry->all_st));
+					detail_row.time_acc = nanosec(entry->all_time_acc);
+					detail_row.sd = nanosec(static_cast<uint_fast64_t>(entry->all_st));
 					detail_row.cv = entry->all_cv;
 					detail_row.calls = entry->all_cnt;
 					detail_row.threads = entry->all_thread_cnt;
+					detail_row.persistent = entry->persistent;
 
 					// Summary-like fields (same calculations as summary row)
 					detail_row.percent_ae_bracket = (time_total > 0) ? (static_cast<double>(entry->center_time_active_exclusive) / time_total * 100.0) : 0.0;
 					detail_row.percent_ae_all = (time_total > 0) ? (static_cast<double>(entry->all_time_active_exclusive) / time_total * 100.0) : 0.0;
-					detail_row.time_ae_all = std::chrono::nanoseconds(entry->all_time_active_exclusive);
-					detail_row.time_a_all = std::chrono::nanoseconds(entry->all_time_active);
+					detail_row.time_ae_all = nanosec(entry->all_time_active_exclusive);
+					detail_row.time_a_all = nanosec(entry->all_time_active);
 
 					// Fastest/Center/Slowest stats
-					detail_row.fastest_min = std::chrono::nanoseconds(entry->fastest_min);
-					detail_row.fastest_mean = std::chrono::nanoseconds(static_cast<uint_fast64_t>(entry->fastest_mean));
-					detail_row.center_min = std::chrono::nanoseconds(entry->center_min);
-					detail_row.center_mean = std::chrono::nanoseconds(static_cast<uint_fast64_t>(entry->center_mean));
-					detail_row.center_med = std::chrono::nanoseconds(entry->center_med);
-					detail_row.center_time_a = std::chrono::nanoseconds(entry->center_time_active);
-					detail_row.center_time_ae = std::chrono::nanoseconds(entry->center_time_active_exclusive);
-					detail_row.center_max = std::chrono::nanoseconds(entry->center_max);
-					detail_row.slowest_mean = std::chrono::nanoseconds(static_cast<uint_fast64_t>(entry->slowest_mean));
-					detail_row.slowest_max = std::chrono::nanoseconds(entry->slowest_max);
+					detail_row.fastest_min = nanosec(entry->fastest_min);
+					detail_row.fastest_mean = nanosec(static_cast<uint_fast64_t>(entry->fastest_mean));
+					detail_row.center_min = nanosec(entry->center_min);
+					detail_row.center_mean = nanosec(static_cast<uint_fast64_t>(entry->center_mean));
+					detail_row.center_med = nanosec(entry->center_med);
+					detail_row.center_time_a = nanosec(entry->center_time_active);
+					detail_row.center_time_ae = nanosec(entry->center_time_active_exclusive);
+					detail_row.center_max = nanosec(entry->center_max);
+					detail_row.slowest_mean = nanosec(static_cast<uint_fast64_t>(entry->slowest_mean));
+					detail_row.slowest_max = nanosec(entry->slowest_max);
 
 					detail_row.fastest_range = entry->fastest_range;
 					detail_row.slowest_range = entry->slowest_range;
@@ -1117,21 +1148,15 @@ namespace ctrack
 			const ctrack_result_tables &get_tables() const { return tables; }
 		};
 
-		inline int fetch_event_t_id()
-		{
-			if (thread_id == nullptr || *thread_id == -1)
-			{
+		inline int fetch_event_t_id() {
+			if (thread_id == nullptr || *thread_id == -1) {
 				std::scoped_lock lock(store::event_mutex);
 
-				if (thread_id == nullptr)
-				{
+				if (thread_id == nullptr) {
 					store::a_thread_ids.emplace_back(++store::thread_cnt);
 					thread_id = &store::a_thread_ids[store::a_thread_ids.size() - 1];
 				}
-				else
-				{
-					*thread_id = ++store::thread_cnt;
-				}
+				else *thread_id = ++store::thread_cnt;
 
 				store::a_events.emplace_back(t_events{});
 				store::a_sub_events.emplace_back(sub_events{});
@@ -1148,42 +1173,41 @@ namespace ctrack
 
 				event_ptr->reserve(100);
 			}
+
 			return *thread_id;
 		}
 
-		class EventHandler
-		{
+		class EventHandler {
 		public:
-			EventHandler(int line = __builtin_LINE(), const char *filename = __builtin_FILE(), const char *function = __builtin_FUNCTION(), std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now()) : line(line)
-
-			{
-
+			EventHandler(
+				int line = __builtin_LINE(),
+				const char *filename = __builtin_FILE(),
+				const char *function = __builtin_FUNCTION(),
+				bool persistence = false,
+				time_point start_time = clock::now()
+			) : line(line), persistent(persistence) {
 				previous_store_clear_cnt = store::store_clear_cnt;
 				this->filename = filename;
 				this->function = function;
 				while (store::write_events_locked)
-				{
-				}
+					;
 
 				register_event();
 				this->start_time = start_time;
 			}
-			~EventHandler()
-			{
-				auto end_time = std::chrono::high_resolution_clock::now();
+
+			~EventHandler() {
+				auto end_time = clock::now();
 				while (store::write_events_locked)
-				{
-				}
+					;
 
 				if (store::store_clear_cnt != previous_store_clear_cnt)
-				{
 					register_event();
-				}
 
 				if (event_ptr->capacity() - event_ptr->size() < 1)
 					event_ptr->reserve(event_ptr->capacity() * 4);
 
-				event_ptr->emplace_back(Event{start_time, end_time, filename, line, function, t_id, event_id});
+				event_ptr->emplace_back(Event{start_time, end_time, filename, line, function, t_id, event_id, persistent});
 
 				*current_event_id = previous_event_id;
 				if (previous_event_id > 0)
@@ -1195,26 +1219,26 @@ namespace ctrack
 			}
 
 		private:
-			void register_event()
-			{
+			void register_event() {
 				t_id = fetch_event_t_id();
 				previous_event_id = *current_event_id;
 				event_id = ++(*current_event_cnt);
 				*current_event_id = event_id;
 			}
-			std::chrono::high_resolution_clock::time_point start_time;
-			int line;
-			unsigned int previous_store_clear_cnt;
+
+			time_point start_time;
+			int		line;
+			unsigned previous_store_clear_cnt;
 
 			std::string_view filename, function;
 
-			int t_id;
-			unsigned int event_id;
-			unsigned int previous_event_id;
+			int		t_id;
+			unsigned event_id;
+			unsigned previous_event_id;
+			bool		persistent;
 		};
 
-		inline void clear_a_store()
-		{
+		inline void clear_a_store() {
 			store::a_current_event_id.clear();
 			store::a_current_event_id.shrink_to_fit();
 
@@ -1231,10 +1255,9 @@ namespace ctrack
 			store::a_sub_events.shrink_to_fit();
 
 			store::thread_cnt = -1;
+
 			for (auto &entry : store::a_thread_ids)
-			{
 				entry = -1;
-			}
 
 			event_ptr = nullptr;
 			sub_events_ptr = nullptr;
@@ -1244,12 +1267,11 @@ namespace ctrack
 			thread_id = nullptr;
 
 			store::store_clear_cnt++;
-			store::track_start_time = std::chrono::high_resolution_clock::now();
+			store::track_start_time = clock::now();
 		}
 
-		inline ctrack_result calc_stats_and_clear(ctrack_result_settings settings = {})
-		{
-			auto end = std::chrono::high_resolution_clock::now();
+		inline ctrack_result calc_stats_and_clear(ctrack_result_settings settings = {}) {
+			auto end = clock::now();
 			ctrack_result res{settings, store::track_start_time, end};
 
 			// copy data
@@ -1271,13 +1293,12 @@ namespace ctrack
 			}
 
 			res.calculate_stats();
-			store::track_start_time = std::chrono::high_resolution_clock::now();
+			store::track_start_time = clock::now();
 
 			return res;
 		}
 
-		inline void result_print(ctrack_result_settings settings = {})
-		{
+		inline void result_print(ctrack_result_settings settings = {}) {
 			auto res = calc_stats_and_clear(settings);
 			std::cout << "Details" << std::endl;
 			res.get_detail_table(std::cout, true);
@@ -1285,8 +1306,7 @@ namespace ctrack
 			res.get_summary_table(std::cout, true);
 		}
 
-		inline std::string result_as_string(ctrack_result_settings settings = {})
-		{
+		inline std::string result_as_string(ctrack_result_settings settings = {}) {
 			auto res = calc_stats_and_clear(settings);
 			std::stringstream ss;
 			ss << "Summary\n";
@@ -1297,61 +1317,84 @@ namespace ctrack
 			return ss.str();
 		}
 
-		inline ctrack_result_tables result_get_tables(ctrack_result_settings settings = {})
-		{
+		inline ctrack_result_tables result_get_tables(ctrack_result_settings settings = {}) {
 			auto res = calc_stats_and_clear(settings);
 			return res.get_tables();
 		}
 
-		inline summary_table result_get_summary_table(ctrack_result_settings settings = {})
-		{
+		inline summary_table result_get_summary_table(ctrack_result_settings settings = {}) {
 			auto res = calc_stats_and_clear(settings);
 			return res.get_tables().summary;
 		}
 
-		inline detail_table result_get_detail_table(ctrack_result_settings settings = {})
-		{
+		inline detail_table result_get_detail_table(ctrack_result_settings settings = {}) {
 			auto res = calc_stats_and_clear(settings);
 			return res.get_tables().details;
 		}
 	}
 }
 
-#ifndef CTRACK_DISABLE
-#define CTRACK_CONCAT_IMPL(x, y) x##y
-#define CTRACK_CONCAT(x, y) CTRACK_CONCAT_IMPL(x, y)
-#define CTRACK_UNIQUE_NAME(prefix) CTRACK_CONCAT(prefix, __COUNTER__)
+	#define CTRACK_CONCAT_IMPL(x, y) x##y
+	#define CTRACK_CONCAT(x, y) CTRACK_CONCAT_IMPL(x, y)
+	#define CTRACK_UNIQUE_NAME(prefix) CTRACK_CONCAT(prefix, __COUNTER__)
 
-#define CTRACK_IMPL \
-	ctrack::EventHandler CTRACK_UNIQUE_NAME(ctrack_instance_) { __builtin_LINE(), __builtin_FILE(), __builtin_FUNCTION() }
-#define CTRACK_IMPL_NAME(name) \
-	ctrack::EventHandler CTRACK_UNIQUE_NAME(ctrack_instance_) { __builtin_LINE(), __builtin_FILE(), name }
-#if defined(CTRACK_DISABLE_DEV)
-#define CTRACK_PROD CTRACK_IMPL
-#define CTRACK_PROD_NAME(name) CTRACK_IMPL_NAME(name)
-#define CTRACK_DEV			  // Disabled
-#define CTRACK_DEV_NAME(name) // Disabled
-#elif defined(CTRACK_DISABLE_PROD)
-#define CTRACK_PROD			   // Disabled
-#define CTRACK_PROD_NAME(name) // Disabled
-#define CTRACK_DEV CTRACK_IMPL
-#define CTRACK_DEV_NAME(name) CTRACK_IMPL_NAME(name)
-#else
-#define CTRACK_PROD CTRACK_IMPL
-#define CTRACK_PROD_NAME(name) CTRACK_IMPL_NAME(name)
-#define CTRACK_DEV CTRACK_IMPL
-#define CTRACK_DEV_NAME(name) CTRACK_IMPL_NAME(name)
-#endif
+	#define CTRACK_IMPL \
+		ctrack::EventHandler CTRACK_UNIQUE_NAME(ctrack_instance_) { __builtin_LINE(), __builtin_FILE(), __builtin_FUNCTION() }
+	#define CTRACK_IMPL_PERSIST \
+		ctrack::EventHandler CTRACK_UNIQUE_NAME(ctrack_instance_) { __builtin_LINE(), __builtin_FILE(), __builtin_FUNCTION(), true }
 
-// Alias CTRACK to CTRACK_PROD
-#define CTRACK CTRACK_PROD
-#define CTRACK_NAME(name) CTRACK_PROD_NAME(name)
+	#define CTRACK_IMPL_NAME(name) \
+		ctrack::EventHandler CTRACK_UNIQUE_NAME(ctrack_instance_) { __builtin_LINE(), __builtin_FILE(), name }
+	#define CTRACK_IMPL_NAME_PERSIST(name) \
+		ctrack::EventHandler CTRACK_UNIQUE_NAME(ctrack_instance_) { __builtin_LINE(), __builtin_FILE(), name, true }
+
+	#if defined(CTRACK_DISABLE_DEV)
+		#define CTRACK_PROD							CTRACK_IMPL
+		#define CTRACK_PROD_PERSIST				CTRACK_IMPL_PERSIST
+		#define CTRACK_PROD_NAME(name)			CTRACK_IMPL_NAME(name)
+		#define CTRACK_PROD_NAME_PERSIST(name) CTRACK_IMPL_NAME(name)
+		#define CTRACK_PROD_NAME_PERSIST(name) CTRACK_IMPL_NAME_PERSIST(name)
+		#define CTRACK_DEV							// Disabled
+		#define CTRACK_DEV_PERSIST					// Disabled
+		#define CTRACK_DEV_NAME(name)				// Disabled
+		#define CTRACK_DEV_NAME_PERSIST(name)  // Disabled
+	#elif defined(CTRACK_DISABLE_PROD)
+		#define CTRACK_PROD							// Disabled
+		#define CTRACK_PROD_PERSIST			   // Disabled
+		#define CTRACK_PROD_NAME(name)			// Disabled
+		#define CTRACK_PROD_NAME_PERSIST(name)	// Disabled
+		#define CTRACK_DEV							CTRACK_IMPL
+		#define CTRACK_DEV_PERSIST					CTRACK_IMPL_PERSIST
+		#define CTRACK_DEV_NAME(name)				CTRACK_IMPL_NAME(name)
+		#define CTRACK_DEV_NAME_PERSIST(name)	CTRACK_IMPL_NAME_PERSIST(name)
+	#else
+		#define CTRACK_PROD							CTRACK_IMPL
+		#define CTRACK_PROD_PERSIST				CTRACK_IMPL_PERSIST
+		#define CTRACK_PROD_NAME(name)			CTRACK_IMPL_NAME(name)
+		#define CTRACK_PROD_NAME_PERSIST(name)	CTRACK_IMPL_NAME_PERSIST(name)
+		#define CTRACK_DEV							CTRACK_IMPL
+		#define CTRACK_DEV_PERSIST					CTRACK_IMPL_PERSIST
+		#define CTRACK_DEV_NAME(name)				CTRACK_IMPL_NAME(name)
+		#define CTRACK_DEV_NAME_PERSIST(name)	CTRACK_IMPL_NAME_PERSIST(name)
+	#endif
+
+	// Alias CTRACK to CTRACK_PROD
+	#define CTRACK								CTRACK_PROD
+	#define CTRACK_PERSIST					CTRACK_PROD_PERSIST
+	#define CTRACK_NAME(name)				CTRACK_PROD_NAME(name)
+	#define CTRACK_NAME_PERSIST(name)	CTRACK_PROD_NAME_PERSIST(name)
 
 #else // CTRACK_DISABLE
-#define CTRACK_PROD
-#define CTRACK_PROD_NAME(name)
-#define CTRACK_DEV
-#define CTRACK_DEV_NAME(name)
-#define CTRACK
-#define CTRACK_NAME(name)
+	#define CTRACK_PROD
+	#define CTRACK_PROD_PERSIST
+	#define CTRACK_PROD_NAME(name)
+	#define CTRACK_PROD_NAME_PERSIST(name)
+	#define CTRACK_DEV
+	#define CTRACK_DEV_PERSIST
+	#define CTRACK_DEV_NAME(name)
+	#define CTRACK_DEV_NAME_PERSIST(name)
+	#define CTRACK
+	#define CTRACK_PERSIST
+	#define CTRACK_NAME(name)
+	#define CTRACK_NAME_PERSIST(name)
 #endif // CTRACK_DISABLE
