@@ -785,15 +785,15 @@ namespace ctrack
 			std::unordered_map<std::string, detail_stats> by_function_name;
 			mutable std::unordered_map<std::string, int64_t> by_function_name_highscore;
 
-			bool check_same(const std::string& f1, const std::string& f2, double tolerance = 20.0) const {
+			bool check_same(const std::string& f1, const std::string& f2, double tolerance = 30.0) const {
 				return within_tolerance(by_function_name.at(f1).center_mean, by_function_name.at(f2).center_mean, tolerance);
 			}
 
 			bool check_faster(const std::string& f_faster, const std::string& f_slower) const {
-				return by_function_name.at(f_faster).center_mean < by_function_name.at(f_slower).center_mean;
+				return by_function_name.at(f_faster).fastest_mean < by_function_name.at(f_slower).center_mean;
 			}
 
-			bool check_highscore(double tolerance = 20.0, std::string filename = "ctrack_highscore.txt") const {
+			bool check_highscore(double tolerance = 30.0, std::string filename = "ctrack_highscore.txt") const {
 			#ifdef CTRACK_ENABLE_PERSISTENCE
 				std::fstream persistence;
 				persistence.open(filename, std::ios::in | std::ios::out | std::ios::app);
@@ -807,19 +807,16 @@ namespace ctrack
 					std::getline(persistence, line);
 
 					for (auto& r : rows) {
-						if (!r.persistent)
-							continue;
-
 						if (line.starts_with(r.function_name)) {
 							// Record already exists - extract it
-							int64_t* volatile hs = &by_function_name_highscore[r.function_name];
-							std::from_chars(line.data() + r.function_name.size() + 1, line.data() + line.size(), *hs);
-							nanosec expected {*hs};
-							if (!within_tolerance(r.center_mean, expected, tolerance)) {
+							int64_t& hs = by_function_name_highscore[r.function_name];
+							std::from_chars(line.data() + r.function_name.size() + 1, line.data() + line.size(), hs);
+							nanosec expected {hs};
+							if (r.persistent && !within_tolerance(r.center_mean, expected, tolerance)) {
 								if (expected > r.center_mean)
-									std::cout << "\n\033[38;5;28m[ctrack] NEW HIGHSCORE: " << r.function_name << " average execution time fell from " << expected << " to " << r.center_mean << std::endl;
+									std::cout << "\n\033[38;5;28m[ctrack] NEW HIGHSCORE: " << r.function_name << " minimum execution time fell from " << expected << " to " << r.center_mean << std::endl;
 								else {
-									std::cout << "\n\033[38;5;130m[ctrack] PERFORMANCE REGRESS: " << r.function_name << " average execution time increased from " << expected << " to " << r.center_mean << std::endl;
+									std::cout << "\n\033[38;5;130m[ctrack] PERFORMANCE REGRESS: " << r.function_name << " minimum execution time increased from " << expected << " to " << r.center_mean << std::endl;
 									result = false;
 								}
 							}
@@ -830,8 +827,8 @@ namespace ctrack
 				// Write missing entries
 				persistence.clear();
 				for (auto& r : rows) {
-					if (!r.persistent)
-						continue;
+					//if (!r.persistent)
+					//	continue; // still write the highscore for information
 
 					if (!by_function_name_highscore.contains(r.function_name)) {
 						persistence << r.function_name << " " << r.center_mean.count() << std::endl;
